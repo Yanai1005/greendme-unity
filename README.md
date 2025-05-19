@@ -9,8 +9,7 @@ WebGLのビルドを行う
 - File > Build Settings > WebGL
 ビルド先を指定する  
 今回の場合  
-> Greendme
-(命名ミスった)
+> Build
 
 firebaseのデプロイをする
 > firebase deploy
