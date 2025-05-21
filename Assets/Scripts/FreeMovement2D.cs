@@ -3,27 +3,50 @@ using UnityEngine;
 public class FreeMovement2D : MonoBehaviour
 {
     [Header("移動設定")]
-    public float moveSpeed = 5f;
+    public float moveUnit = 1f;
+    public float moveDuration = 0.2f; // 移動にかかる時間（秒）
 
-    void Update()
+    private bool isMoving = false;
+
+    public void MoveRight(int position)
     {
-        // 入力を取得
-        float horizontalInput = Input.GetAxis("Horizontal"); // A/D キー
-        float verticalInput = Input.GetAxis("Vertical");     // W/S キー
+        if (!isMoving)
+            StartCoroutine(MoveBy(Vector2.right * position * moveUnit));
+    }
 
-        // 移動ベクトルを計算
-        Vector2 moveDirection = new Vector2(horizontalInput, verticalInput);
+    public void MoveLeft(int position)
+    {
+        if (!isMoving)
+            StartCoroutine(MoveBy(Vector2.left * position * moveUnit));
+    }
 
-        // 斜め移動時の速度を正規化（斜め移動が速くなりすぎないように）
-        moveDirection = moveDirection.normalized;
+    public void MoveUp(int position)
+    {
+        if (!isMoving)
+            StartCoroutine(MoveBy(Vector2.up * position * moveUnit));
+    }
 
-        // 移動を適用
-        transform.Translate(moveDirection * moveSpeed * Time.deltaTime);
+    public void MoveDown(int position)
+    {
+        if (!isMoving)
+            StartCoroutine(MoveBy(Vector2.down * position * moveUnit));
+    }
 
-        // キャラクターの向きを変更（左右移動時のみ）
-        if (horizontalInput > 0)
-            transform.localScale = new Vector3(1, 1, 1); // 右向き
-        else if (horizontalInput < 0)
-            transform.localScale = new Vector3(-1, 1, 1); // 左向き
+    private System.Collections.IEnumerator MoveBy(Vector2 offset)
+    {
+        isMoving = true;
+        Vector3 start = transform.position;
+        Vector3 end = start + (Vector3)offset;
+
+        float elapsed = 0f;
+        while (elapsed < moveDuration)
+        {
+            transform.position = Vector3.Lerp(start, end, elapsed / moveDuration);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        transform.position = end;
+        isMoving = false;
     }
 }
