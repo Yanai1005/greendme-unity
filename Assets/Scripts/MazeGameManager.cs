@@ -33,6 +33,7 @@ public class MazeGameManager : MonoBehaviour
         if (playerMovement != null)
         {
             playerMovement.gameObject.tag = "Player";
+            Debug.Log("Player tag set on: " + playerMovement.gameObject.name);
         }
     }
 
@@ -91,9 +92,52 @@ public class MazeGameManager : MonoBehaviour
         }
     }
 
-    // Unity WebGLからの呼び出し用メソッド
-    public void OnMoveRight() { if (playerMovement != null) playerMovement.MoveRight(); }
-    public void OnMoveLeft() { if (playerMovement != null) playerMovement.MoveLeft(); }
-    public void OnMoveUp() { if (playerMovement != null) playerMovement.MoveUp(); }
-    public void OnMoveDown() { if (playerMovement != null) playerMovement.MoveDown(); }
+    // Unity WebGLからの呼び出し用メソッド（キーボード制御）
+    public void OnMoveRight()
+    {
+        if (playerMovement != null && !playerMovement.IsUsingBodyControl())
+            playerMovement.MoveRight();
+    }
+
+    public void OnMoveLeft()
+    {
+        if (playerMovement != null && !playerMovement.IsUsingBodyControl())
+            playerMovement.MoveLeft();
+    }
+
+    public void OnMoveUp()
+    {
+        if (playerMovement != null && !playerMovement.IsUsingBodyControl())
+            playerMovement.MoveUp();
+    }
+
+    public void OnMoveDown()
+    {
+        if (playerMovement != null && !playerMovement.IsUsingBodyControl())
+            playerMovement.MoveDown();
+    }
+
+    // 体の傾き制御用メソッド（Reactから呼び出される）
+    public void SetMovementDirection(string directionData)
+    {
+        if (playerMovement != null)
+        {
+            playerMovement.SetMovementDirection(directionData);
+        }
+    }
+
+    // 体の傾き制御の無効化
+    public void DisableBodyControl()
+    {
+        if (playerMovement != null)
+        {
+            playerMovement.DisableBodyControl();
+        }
+    }
+
+    // デバッグ用：現在の制御モードを取得
+    public bool IsUsingBodyControl()
+    {
+        return playerMovement != null ? playerMovement.IsUsingBodyControl() : false;
+    }
 }

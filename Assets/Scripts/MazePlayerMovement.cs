@@ -7,9 +7,18 @@ public class MazePlayerMovement : MonoBehaviour
     public float moveUnit = 1f;
     public float moveDuration = 0.2f;
 
+    [Header("体の傾き制御設定")]
+    public float inputThreshold = 0.3f; // 移動を開始する傾きの閾値
+    public float continuousMoveCooldown = 0.3f; // 連続移動の間隔
+
     private MazeGenerator mazeGenerator;
     private bool isMoving = false;
     private Vector2Int currentGridPosition;
+
+    // 体の傾き制御用
+    private Vector2 currentInputDirection = Vector2.zero;
+    private float lastMoveTime = 0f;
+    private bool useBodyControl = false;
 
     void Start()
     {
@@ -59,8 +68,8 @@ public class MazePlayerMovement : MonoBehaviour
 
     void Update()
     {
-        // WASDキーでの移動入力処理
-        if (!isMoving)
+        // キーボード入力による移動（体の傾き制御が無効な場合のみ）
+        if (!isMoving && !useBodyControl)
         {
             if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
             {
@@ -83,8 +92,82 @@ public class MazePlayerMovement : MonoBehaviour
                 MoveRight();
             }
         }
+
+        // 体の傾き制御による移動処理
+        if (useBodyControl && !isMoving && Time.time - lastMoveTime > continuousMoveCooldown)
+        {
+            ProcessBodyInput();
+        }
     }
 
+    // Reactからの体の傾きデータを受信するメソッド
+    public void SetMovementDirection(string directionData)
+    {
+        try
+        {
+            useBodyControl = true;
+            MovementData data = JsonUtility.FromJson<MovementData>(directionData);
+
+            // 入力方向を更新
+            currentInputDirection = new Vector2(data.x, data.y);
+
+            Debug.Log($"Body input received: X={data.x:F2}, Y={data.y:F2}");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("移動データの解析エラー: " + e.Message);
+        }
+    }
+
+    // 体の傾き入力を処理して移動コマンドに変換
+    void ProcessBodyInput()
+    {
+        // 閾値を超えた場合のみ移動
+        if (Mathf.Abs(currentInputDirection.x) > inputThreshold || Mathf.Abs(currentInputDirection.y) > inputThreshold)
+        {
+            // より強い傾きの軸を優先
+            if (Mathf.Abs(currentInputDirection.x) > Mathf.Abs(currentInputDirection.y))
+            {
+                // 水平移動
+                if (currentInputDirection.x > inputThreshold)
+                {
+                    Debug.Log("Body control: Moving Right");
+                    MoveRight();
+                }
+                else if (currentInputDirection.x < -inputThreshold)
+                {
+                    Debug.Log("Body control: Moving Left");
+                    MoveLeft();
+                }
+            }
+            else
+            {
+                // 垂直移動（Yの方向を調整）
+                if (currentInputDirection.y > inputThreshold)
+                {
+                    Debug.Log("Body control: Moving Down");
+                    MoveDown(); // 画面座標系では正のYが下向き
+                }
+                else if (currentInputDirection.y < -inputThreshold)
+                {
+                    Debug.Log("Body control: Moving Up");
+                    MoveUp();
+                }
+            }
+
+            lastMoveTime = Time.time;
+        }
+    }
+
+    // キーボード制御に戻すメソッド
+    public void DisableBodyControl()
+    {
+        useBodyControl = false;
+        currentInputDirection = Vector2.zero;
+        Debug.Log("Body control disabled, switched to keyboard control");
+    }
+
+    // 既存の移動メソッド群
     public void MoveRight(int steps = 1)
     {
         if (!isMoving)
@@ -139,6 +222,7 @@ public class MazePlayerMovement : MonoBehaviour
             else
             {
                 // 壁にぶつかった場合は移動を停止
+                Debug.Log("Hit wall - movement stopped");
                 break;
             }
 
@@ -161,4 +245,16 @@ public class MazePlayerMovement : MonoBehaviour
     {
         return isMoving;
     }
+
+    public bool IsUsingBodyControl()
+    {
+        return useBodyControl;
+    }
+}
+
+[System.Serializable]
+public class MovementData
+{
+    public float x;
+    public float y;
 }
